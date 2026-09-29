@@ -1,0 +1,6 @@
+# Closed expression (no free variables, so Lint reports success) that
+# fails only when actually evaluated: division by zero. This is the
+# example used to demonstrate that Lint and Interpret are independent --
+# passing Lint means the expression is closed, not that it will run
+# successfully.
+D0Eop2("/", D0Eint(1), D0Eint(0))

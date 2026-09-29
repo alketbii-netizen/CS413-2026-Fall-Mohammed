@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>LAMBDA Web Front-End</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <h1>LAMBDA Web Front-End</h1>
+
+  <section id="source-menu" aria-label="Load source">
+    <h2>Load source</h2>
+    <label for="file-input">Choose File</label>
+    <input type="file" id="file-input" accept=".txt,.lambda">
+    <button type="button" id="btn-manual">Manual input</button>
+    <button type="button" id="btn-factorial">Factorial (canned)</button>
+    <button type="button" id="btn-fibonacci">Fibonacci (canned)</button>
+    <p id="source-info">Source: <span id="source-name">(none)</span> &middot; revision <span id="source-revision">0</span></p>
+  </section>
+
+  <section id="editor-section" aria-label="Editor">
+    <h2>Editor</h2>
+    <textarea id="editor" rows="14" cols="90" aria-label="LAMBDA source editor"></textarea>
+    <div>
+      <button type="button" id="btn-apply">Apply changes</button>
+      <button type="button" id="btn-discard">Discard changes</button>
+    </div>
+  </section>
+
+  <section id="actions-section" aria-label="Actions">
+    <h2>Actions</h2>
+    <div id="action-buttons">
+      <button type="button" class="action-btn" id="btn-lint" data-action="lint">Lint</button>
+      <button type="button" class="action-btn" id="btn-interpret" data-action="interpret">Interpret</button>
+      <button type="button" class="action-btn" id="btn-typecheck" data-action="typecheck">Type-check</button>
+      <button type="button" class="action-btn" id="btn-compile" data-action="compile">Compile</button>
+      <button type="button" class="action-btn" id="btn-execute" data-action="execute">Execute</button>
+    </div>
+  </section>
+
+  <section id="status-section" aria-label="Status">
+    <h2>Status</h2>
+    <p id="status-text">Idle.</p>
+  </section>
+
+  <section id="results-section" aria-label="Results">
+    <h2>Results</h2>
+    <table id="results-table">
+      <thead>
+        <tr><th>Action</th><th>Revision</th><th>Outcome</th><th>Message</th></tr>
+      </thead>
+      <tbody id="results-body">
+      </tbody>
+    </table>
+  </section>
+
+  <script id="initial-state" type="application/json">{{ initial_state | tojson }}</script>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

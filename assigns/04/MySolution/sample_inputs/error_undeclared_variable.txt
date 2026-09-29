@@ -1,0 +1,6 @@
+# Open expression: "x" is never bound anywhere, so Lint should report it
+# as an undeclared variable. Interpret would also fail on this (the
+# environment lookup returns the D0V000 error sentinel), but Lint does
+# not evaluate the expression to find this out -- it only inspects the
+# expression's free-variable set.
+D0Evar("x")
