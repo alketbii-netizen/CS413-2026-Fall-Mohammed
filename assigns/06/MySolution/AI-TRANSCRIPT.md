@@ -44,6 +44,4 @@
 - Tests check purity of all output, closedness of every combinator,
   `FV(C[e]) = FV(e)` on open programs, input immutability, and that compilation
   never calls the evaluator (the evaluator entry points are patched to fail).
-- My own review: _(Mo — add what you read/checked yourself, e.g. walked
-  through `PRED` on 0 and 2 by hand, traced `if true then 1 else LOOP`,
-  checked the translation rules against `compiler.py`.)_
+- My own review: I ran the tests and demo on my machine (Python 3.13), confirmed the results, and presented the demo output on camera. Claude also drafted the slides and speaking script and joined my two Zoom recordings into one video.
