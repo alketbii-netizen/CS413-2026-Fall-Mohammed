@@ -82,7 +82,7 @@ exhaustion, not as proof of nontermination.
 ## Presentation
 
 - Slides (PDF): `MySolution/slides/CS413-Midterm1-Slides.pdf` (source: `slides/make_slides.py`)
-- Recording: **TODO — add link here** (e.g. a BU OneDrive/YouTube unlisted link set to
+- Recording: `MySolution/slides/CS413-Midterm1-Presentation.mp4` (18:11)
   "anyone with the link can view"; verify it opens in a private window).
 
 ## Attribution
