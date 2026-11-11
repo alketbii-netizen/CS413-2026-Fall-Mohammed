@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "id": {"type": ["string", "number", "null"]},
+    "request": {
+      "type": "object",
+      "required": ["jsonrpc", "method"],
+      "properties": {
+        "jsonrpc": {"const": "2.0"},
+        "method": {"enum": ["service.health", "lambda.typecheck", "lambda.interpret", "lambda.compile"]},
+        "params": {"type": "object"},
+        "id": {"$ref": "#/$defs/id"}
+      }
+    },
+    "error": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {"code": {"type": "integer"}, "message": {"type": "string"}, "data": {}}
+    },
+    "response": {
+      "type": "object",
+      "required": ["jsonrpc", "id"],
+      "properties": {"jsonrpc": {"const": "2.0"}, "id": {"$ref": "#/$defs/id"},
+                     "result": {}, "error": {"$ref": "#/$defs/error"}},
+      "oneOf": [{"required": ["result"], "not": {"required": ["error"]}},
+                {"required": ["error"], "not": {"required": ["result"]}}]
+    }
+  },
+  "oneOf": [
+    {"$ref": "#/$defs/request"},
+    {"type": "array", "items": {"$ref": "#/$defs/request"}},
+    {"$ref": "#/$defs/response"},
+    {"type": "array", "items": {"$ref": "#/$defs/response"}}
+  ]
+}
