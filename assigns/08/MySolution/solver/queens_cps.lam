@@ -1,0 +1,131 @@
+# N-Queens search in continuation-passing style, producing a lazy event stream.
+#
+# Board:  List[sint] of queen columns, NEWEST ROW FIRST (head = row r-1).
+#         Invariant: rows 0..r-1 each hold exactly one queen and no two
+#         queens attack each other.  The service reverses it to row order.
+# Event:  (kind, column, row, board) : (sint, sint, sint, List[sint])
+#         kind 0 try | 1 place | 2 reject | 3 backtrack | 4 solution | 5 done
+#         (column/row are -1 for solution and done).
+# Stream: Strm[Event] = Lazy[Stcn[Event]].
+#
+# Continuations (answer type Strm[Event]):
+#   success  sk : (List[sint], unit -> Strm[Event]) -> Strm[Event]
+#                 receives a complete board and the failure continuation that
+#                 resumes the search after it.
+#   failure  fk : unit -> Strm[Event]
+#                 resumes the next candidate of the enclosing branch.
+#   on_safe / on_conflict : unit -> Strm[Event]   (safety checker)
+#
+# Written for CS413 Assign08; the safety test (same column / two diagonals by
+# distance) follows the `safe` function of LAMBDA3/mytest/eight_queens_stream.lam,
+# rewritten in CPS.  Everything else is new.
+let
+  # ---- pure helpers ------------------------------------------------------
+  place : (sint, List[sint]) -> List[sint] =
+    lam (p: (sint, List[sint])) => list_cons(p.0, p.1);
+
+  ev_try : (sint, sint, List[sint]) -> (sint, sint, sint, List[sint]) =
+    lam (p: (sint, sint, List[sint])) => (0, p.0, p.1, p.2);
+  ev_place : (sint, sint, List[sint]) -> (sint, sint, sint, List[sint]) =
+    lam (p: (sint, sint, List[sint])) => (1, p.0, p.1, p.2);
+  ev_reject : (sint, sint, List[sint]) -> (sint, sint, sint, List[sint]) =
+    lam (p: (sint, sint, List[sint])) => (2, p.0, p.1, p.2);
+  ev_backtrack : (sint, sint, List[sint]) -> (sint, sint, sint, List[sint]) =
+    lam (p: (sint, sint, List[sint])) => (3, p.0, p.1, p.2);
+  ev_solution : List[sint] -> (sint, sint, sint, List[sint]) =
+    lam (b: List[sint]) => (4, 0 - 1, 0 - 1, b);
+  ev_done : (sint, sint, sint, List[sint]) = (5, 0 - 1, 0 - 1, list_nil());
+
+  stream_nil : unit -> Strm[(sint, sint, sint, List[sint])] =
+    lam (u: unit) => lazy_make(lam (v: unit) => stcn_nil());
+
+  # emit_lazy(event, k): a stream cell holding event whose tail runs k only
+  # when the consumer forces that tail.
+  emit_lazy : ((sint, sint, sint, List[sint]), unit -> Strm[(sint, sint, sint, List[sint])])
+              -> Strm[(sint, sint, sint, List[sint])] =
+    lam (p: ((sint, sint, sint, List[sint]), unit -> Strm[(sint, sint, sint, List[sint])])) =>
+      lazy_make(lam (u: unit) =>
+        stcn_cons(p.0, lazy_make(lam (v: unit) => lazy_eval(p.1(())))));
+
+  # CPS safety check: calls on_safe if column is compatible with every queen
+  # in board, on_conflict at the first attacking queen.  distance = rows
+  # between the candidate row and the head of board.
+  check_safe : (sint, sint, List[sint],
+                unit -> Strm[(sint, sint, sint, List[sint])],
+                unit -> Strm[(sint, sint, sint, List[sint])])
+               -> Strm[(sint, sint, sint, List[sint])] =
+    fix chk(s: (sint, sint, List[sint],
+                unit -> Strm[(sint, sint, sint, List[sint])],
+                unit -> Strm[(sint, sint, sint, List[sint])]))
+        : Strm[(sint, sint, sint, List[sint])] =>
+      let column = s.0; distance = s.1; board = s.2; on_safe = s.3; on_conflict = s.4
+      in
+        if list_nilq(board) then on_safe(())
+        else
+          let previous = list_head(board)
+          in
+            if previous == column then on_conflict(())
+            else if previous == column - distance then on_conflict(())
+            else if previous == column + distance then on_conflict(())
+            else chk(column, distance + 1, list_tail(board), on_safe, on_conflict)
+          end
+      end;
+
+  # ---- the solver --------------------------------------------------------
+  queens_stream : sint -> Strm[(sint, sint, sint, List[sint])] =
+    lam (n: sint) =>
+      let
+        on_solution : (List[sint], unit -> Strm[(sint, sint, sint, List[sint])])
+                      -> Strm[(sint, sint, sint, List[sint])] =
+          lam (p: (List[sint], unit -> Strm[(sint, sint, sint, List[sint])])) =>
+            emit_lazy(ev_solution(p.0), p.1);
+        root_exhausted : unit -> Strm[(sint, sint, sint, List[sint])] =
+          lam (u: unit) => emit_lazy(ev_done, stream_nil);
+        # try_column(row, column, board, sk, fk)
+        try_column : (sint, sint, List[sint],
+                      (List[sint], unit -> Strm[(sint, sint, sint, List[sint])]) -> Strm[(sint, sint, sint, List[sint])],
+                      unit -> Strm[(sint, sint, sint, List[sint])])
+                     -> Strm[(sint, sint, sint, List[sint])] =
+          fix tc(s: (sint, sint, List[sint],
+                     (List[sint], unit -> Strm[(sint, sint, sint, List[sint])]) -> Strm[(sint, sint, sint, List[sint])],
+                     unit -> Strm[(sint, sint, sint, List[sint])]))
+              : Strm[(sint, sint, sint, List[sint])] =>
+            let
+              row = s.0; column = s.1; board = s.2; sk = s.3; fk = s.4;
+              # search(row, board, sk, fk)
+              search = lam (q: (sint, List[sint],
+                                (List[sint], unit -> Strm[(sint, sint, sint, List[sint])]) -> Strm[(sint, sint, sint, List[sint])],
+                                unit -> Strm[(sint, sint, sint, List[sint])])) =>
+                if q.0 == n then q.2(q.1, q.3) else tc(q.0, 0, q.1, q.2, q.3);
+              next_column = lam (u: unit) => tc(row, column + 1, board, sk, fk)
+            in
+              if column == n then fk(())
+              else emit_lazy(ev_try(column, row, board), lam (u0: unit) =>
+                check_safe(column, 1, board,
+                  lam (u1: unit) =>
+                    let next_board = place(column, board)
+                    in
+                      emit_lazy(ev_place(column, row, next_board), lam (u2: unit) =>
+                        search(row + 1, next_board, sk, lam (u3: unit) =>
+                          emit_lazy(ev_backtrack(column, row, board), next_column)))
+                    end,
+                  lam (u4: unit) =>
+                    emit_lazy(ev_reject(column, row, board), next_column)))
+            end
+      in
+        # Opening the stream does no search: the first cell is still a thunk.
+        lazy_make(lam (u: unit) =>
+          lazy_eval(try_column(0, 0, list_nil(), on_solution, root_exhausted)))
+      end;
+
+  # Test hook: runs the real CPS checker with continuations that emit a
+  # place (safe) or reject (conflict) event, and reports which one ran.
+  safety_probe : (sint, List[sint]) -> bool =
+    lam (p: (sint, List[sint])) =>
+      let first = stcn_head(lazy_eval(check_safe(p.0, 1, p.1,
+                    lam (u: unit) => emit_lazy(ev_place(p.0, 0, p.1), stream_nil),
+                    lam (u: unit) => emit_lazy(ev_reject(p.0, 0, p.1), stream_nil))))
+      in first.0 == 1 end
+in
+  (queens_stream, safety_probe)
+end

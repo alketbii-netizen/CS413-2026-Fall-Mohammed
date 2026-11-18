@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>N-Queens CPS Search</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1>N-Queens — CPS search over a lazy stream</h1>
+    <p class="sub">Each step asks the server for the next event of a LAMBDA3 lazy stream.</p>
+  </header>
+  <section class="layout">
+    <div>
+      <div id="board" class="board" aria-label="chessboard" role="grid"></div>
+      <p id="status" class="status" role="status">Press Start to open a search.</p>
+      <p id="error" class="error" role="alert" hidden></p>
+    </div>
+    <aside>
+      <div class="controls">
+        <label>Size
+          <select id="size">
+            <option>4</option><option>5</option><option>6</option><option>7</option>
+            <option selected>8</option><option>9</option><option>10</option>
+          </select>
+        </label>
+        <button id="start">Start</button>
+        <button id="step" disabled>Step</button>
+        <button id="play" disabled>Play</button>
+        <button id="next-solution" disabled>Next solution</button>
+        <button id="reset" disabled>Reset</button>
+        <label class="speed">Speed
+          <input id="speed" type="range" min="10" max="800" step="10" value="200">
+          <span id="speed-label">200 ms</span>
+        </label>
+      </div>
+      <dl class="stats">
+        <dt>Solutions</dt><dd id="solutions">0</dd>
+        <dt>Events</dt><dd id="events">0</dd>
+        <dt>Backtracks</dt><dd id="backtracks">0</dd>
+      </dl>
+      <div class="legend">
+        <span class="sw try"></span>try <span class="sw place"></span>place
+        <span class="sw reject"></span>reject <span class="sw backtrack"></span>backtrack
+        <span class="sw solution"></span>solution
+      </div>
+      <h2>Event log</h2>
+      <ul id="log" class="log"></ul>
+    </aside>
+  </section>
+</main>
+<script type="module" src="/static/main.js"></script>
+</body>
+</html>
